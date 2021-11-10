@@ -31,3 +31,8 @@ intro.cをコンパイルして、gdbで解析していきます。
 gcc -m32 intro.c -o intro -fno-stack-protector -no-pie
 ```
 
+
+
+
+参考:
+[1]https://gist.github.com/matsubara0507/72dc50c89200a09f7c61
