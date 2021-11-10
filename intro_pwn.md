@@ -86,12 +86,19 @@ End of assembler dump.
    0x080491c5 <+15>:	mov    ebp,esp
 ```
 ここでは、ebpの退避とスタックの作成が行われています。  
-<img src="https://github.com/hanataro-miz/misc/blob/main/2021-11-10%20(2).png" width="600">
+<img src="https://github.com/hanataro-miz/misc/blob/main/2021-11-10%20(2).png" width="600">  
 スタックは、ebp、espに挟まれた領域で、関数で使うローカル変数や、関数の終了時に処理を戻すアドレスを保存しておく場所です。  
 高位アドレスから低位アドレスに向けて成長します。  
 関数のスタックを作成するためには、前の関数で使われていたスタックを保存し、新しいebpとespを設定する必要があります。
 ebpをスタックに保存し、espのアドレスをebpへコピーする、という処理で実現します。  
-<img src="https://github.com/hanataro-miz/misc/blob/main/2021-11-10%20(3).png" width="600">
+<img src="https://github.com/hanataro-miz/misc/blob/main/2021-11-10%20(3).png" width="600">  
+```push   ebp```でebpをスタックに保存し(このとき、スタックの頂点は保存されたebpの値になるので、espはそこを指すようになります。)、```mov    ebp,esp```とすることで、ebpにespの指す値をコピーし、新しい関数のためのスタックを準備します。  
+```assembly
+   0x080491c7 <+17>:	push   ebx
+   0x080491c8 <+18>:	push   ecx
+```
+ここでは、ebxとecxを退避していて、実行後は以下のようなスタックの構造となります。
+
 
 
 参考:
