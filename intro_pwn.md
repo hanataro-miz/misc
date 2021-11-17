@@ -89,14 +89,14 @@ End of assembler dump.
 ```
 ここでは、ebpの退避とスタックの作成が行われています。  
   
-<img src="https://github.com/hanataro-miz/misc/blob/main/2021-11-10%20(2).png" width="600">  
+<img src="https://github.com/hanataro-miz/misc/blob/main/img/stack1.png" width="600">  
   
 スタックは、ebp、espに挟まれた領域で、関数で使うローカル変数や、引数、関数の終了時に処理を戻すアドレスを保存しておく場所です。  
 高位アドレスから低位アドレスに向けて成長します。  
 関数のスタックを作成するためには、前の関数で使われていたスタックを保存し、新しいebpとespを設定する必要があります。  
 ebpをスタックに保存し、espのアドレスをebpへコピーする、という処理で実現します。  
   
-<img src="https://github.com/hanataro-miz/misc/blob/main/2021-11-10%20(3).png" width="600">  
+<img src="https://github.com/hanataro-miz/misc/blob/main/img/stack2.png" width="600">  
   
 ```push   ebp```でebpをスタックに保存し(このとき、スタックの頂点は保存されたebpの値になるので、espはそこを指すようになります。)、```mov    ebp,esp```とすることで、ebpにespの指す値をコピーし、新しい関数のためのスタックを準備します。  
 #### ここまでのまとめ
@@ -112,14 +112,14 @@ ebpをスタックに保存し、espのアドレスをebpへコピーする、�
    0x080491c8 <+18>:	push   ecx
 ```
 ここでは、ebxとecxに保存されている値をスタックに保存していて、実行後は以下のようなスタックの構造となります。  
-<!-- <img> -->  
+<img src="https://github.com/hanataro-miz/misc/blob/main/img/stack3.png" width="600">
 
 
 次に、sub命令を使って、スタックの長さを拡張します。  
 のちのち変数を保存したりする際に使用します。  
 なぜespから数を引くとスタックを拡張することになるのかというと、スタックはアドレスの小さい方向に成長していくためです。  
 sub命令の後のスタックの構造は以下のようになります。  
-
+<img src="https://github.com/hanataro-miz/misc/blob/main/img/stack4.png" width="600">
 ### 関数の呼び出し
 関数を呼び出す際には、引数をスタックに積んでから呼び出します(引数がある場合)。  
 
@@ -131,7 +131,7 @@ sub命令の後のスタックの構造は以下のようになります。
 0x666564は、asciiコード表を参照すると、0x64=d,0x65=e,0x66=fなので、これをどこかのアドレスにコピーします。(リトルエンディアン)  
 アドレスは、[ebp-0x10]と表されていますが、これは「ebpレジスタに格納されているアドレスから0x10引いたアドレス」、という意味になります。  
 よって、画像では[ebp-0x10]は0xffffd1a8 - 0x10 = 0xffffd198結果になり、スタックの構造は以下のようになります。  
-<!-- <img> -->  
+<img src="https://github.com/hanataro-miz/misc/blob/main/img/stack5.png" width="600">
 次に、strcmp関数に引数を渡して処理を行います。
 ```assembly
    0x080491e5 <+47>:	sub    esp,0x8
@@ -144,9 +144,10 @@ sub命令の後のスタックの構造は以下のようになります。
 eaxに文字が格納されたアドレス[ebp-0x14]を代入し、スタックにpushします。  
 lea命令は、```lea x, y```の形で、yで表現されるアドレスをxに代入します。  
 実行後のスタックの構造は以下のようになります。  
-<!-- img -->  
-ジャンプ先では、ebpをスタックにpushし、espをebpへコピーする、という処理が行われ、新しいスタックがこの上に作られていきます。  
+<img src="https://github.com/hanataro-miz/misc/blob/main/img/stack6.png" width="600">
 
+ジャンプ先では、ebpをスタックにpushし、espをebpへコピーする、という処理が行われ、新しいスタックがこの上に作られていきます。  
+<img src="https://github.com/hanataro-miz/misc/blob/main/img/stack7.png" width="600">
 ### スタックの開放
 関数の処理が終わった後は、引数を渡すために利用したスタックの領域を解放します。  
 subでスタックを拡張したのとは反対に、espに対してaddを使うことでスタックの領域を解放します。  
@@ -154,7 +155,8 @@ subでスタックを拡張したのとは反対に、espに対してaddを使�
    0x080491f5 <+63>:	add    esp,0x10
 ```
 開放後のスタックは以下のようになります。  
-<!-- img -->
+<img src="https://github.com/hanataro-miz/misc/blob/main/img/stack8.png" width="600">
+
 
 ### printf関数の呼び出し
 ```assembly
@@ -169,7 +171,8 @@ subでスタックを拡張したのとは反対に、espに対してaddを使�
 strcmpの返された結果をprintf関数で表示するために、eaxレジスタの値をスタックに積みます。  
 
 ここで、[ebx-0x1ff8]の領域には、"%d"という文字へのアドレスが配置されています。  
-<!-- img -->
+<img src="https://github.com/hanataro-miz/misc/blob/main/img/stack9.png" width="600">
+
 
 
 ### gdbの使い方と演習
