@@ -59,7 +59,7 @@ login3のmain関数の実行時のスタックの内容は以下の通り。
 これを以下のように書き換える。
 
 |アドレス|サイズ|値|内容|
-|:---|:---|:---|
+|:---|:---|:---|:---|
 |rdp-0x20|0x20|aaaa...|id|
 |rdp|0x08|aaaa...|古いrdpの値|
 |rdp+0x8|0x08|0x4012d3|pop rdi; ret|
@@ -69,7 +69,8 @@ login3のmain関数の実行時のスタックの内容は以下の通り。
 二回目のスタックバッファオーバーフローではrdp+0x8をOne-gadget RCEのアドレスに書き換える。  
 
 問題サーバーのlibc-2.31.soをダウンロードして、printf関数とOne-gedget RCEのアドレスを調べる。  
-その際、OneGadget(https://github.com/david942j/one_gadget)と呼ばれるツールを使用する。  
+その際、OneGadget(https://github.com/david942j/one_gadget)
+と呼ばれるツールを使用する。  
 ```
 objdump -T libc-2.31.so | grep ' printf'
 bundle exec one_gadget /path/to/libc-2.31.so
