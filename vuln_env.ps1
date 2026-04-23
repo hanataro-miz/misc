@@ -60,7 +60,7 @@ Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Installer" -Na
 New-Item -Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\Installer" -Force | Out-Null
 Set-ItemProperty -Path "HKCU:\SOFTWARE\Policies\Microsoft\Windows\Installer" -Name "AlwaysInstallElevated" -Type DWord -Value 1
 
-# SAM/SYSTEMバックアップファイル
+# SAM/SYSTEM backup
 New-Item -ItemType Directory -Path "C:\Backup" -Force
 reg save HKLM\SAM C:\Backup\SAM.hive
 reg save HKLM\SYSTEM C:\Backup\SYSTEM.hive
