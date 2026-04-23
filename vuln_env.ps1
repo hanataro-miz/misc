@@ -74,7 +74,7 @@ Set-ItemProperty -Path $winlogon -Name "DefaultUserName" -Value "serviceuser" -T
 Set-ItemProperty -Path $winlogon -Name "DefaultPassword" -Value "Se4v1ceUse4" -Type String
 Set-ItemProperty -Path $winlogon -Name "DefaultDomainName" -Value $env:COMPUTERNAME -Type String
 
-# DLL Hijacking (書き込み可能なPATH)
+# DLL Hijacking (writable PATH)
 New-Item -ItemType Directory -Path "C:\CustomTools" -Force
 icacls "C:\CustomTools" /grant "Users:(OI)(CI)M"
 $oldPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
