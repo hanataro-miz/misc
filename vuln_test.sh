@@ -351,7 +351,87 @@ else
 fi
 
 # =============================================================================
-# 15. Summary
+# 15. Hold vulnerable packages (T1068 Exploitation for Privilege Escalation)
+# =============================================================================
+c_step "15. Hold vulnerable versions of kernel / sudo / pkexec"
+
+# Prevent apt from upgrading these packages so CVE-exploits (PwnKit, Baron Samedit, DirtyPipe etc.) remain viable.
+# The actual vulnerability depends on the current installed version; this only pins whatever is installed now.
+apt-mark hold sudo 2>/dev/null           && c_ok "apt-mark hold: sudo (CVE-2021-3156 Baron Samedit target)"
+apt-mark hold policykit-1 2>/dev/null    && c_ok "apt-mark hold: policykit-1 (CVE-2021-4034 PwnKit target)"
+apt-mark hold polkitd 2>/dev/null        && c_info "apt-mark hold: polkitd (name on newer distros)"
+apt-mark hold linux-image-generic 2>/dev/null   && c_ok "apt-mark hold: linux-image-generic (kernel CVEs)"
+apt-mark hold linux-image-$(uname -r) 2>/dev/null && c_ok "apt-mark hold: linux-image-$(uname -r)"
+apt-mark hold glibc 2>/dev/null
+apt-mark hold libc6 2>/dev/null          && c_ok "apt-mark hold: libc6 (CVE-2023-4911 Looney Tunables target)"
+
+c_info "Current versions:"
+c_info "  sudo:        $(dpkg -s sudo 2>/dev/null        | awk '/^Version:/{print $2}')"
+c_info "  policykit-1: $(dpkg -s policykit-1 2>/dev/null | awk '/^Version:/{print $2}')"
+c_info "  kernel:      $(uname -r)"
+c_info "Example: check pkexec with 'pkexec --version'; if <= 0.120, PwnKit likely works"
+
+# =============================================================================
+# 16. Writable systemd unit ExecStart (T1574 Hijack Execution Flow)
+# =============================================================================
+c_step "16. Writable systemd unit ExecStart script"
+
+mkdir -p /opt/myapp
+cat > /opt/myapp/start.sh <<'EOF'
+#!/bin/bash
+# Startup hook for myapp service
+/usr/bin/logger "myapp service started at $(date)"
+EOF
+chmod 755 /opt/myapp/start.sh
+chown root:root /opt/myapp/start.sh
+
+# Writable parent directory (can replace start.sh)
+chmod 777 /opt/myapp
+
+# Register as systemd service
+cat > /etc/systemd/system/myapp.service <<'EOF'
+[Unit]
+Description=My Application Service (lab-vulnerable)
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/myapp/start.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+chmod 644 /etc/systemd/system/myapp.service
+systemctl daemon-reload 2>/dev/null
+systemctl enable myapp.service 2>/dev/null
+c_ok "systemd unit myapp.service installed (ExecStart dir writable)"
+c_info "Example: overwrite /opt/myapp/start.sh, then wait for reboot or 'systemctl restart myapp'"
+
+# Also: /etc/ld.so.conf.d/ world-writable (system-wide library search path injection)
+chmod 777 /etc/ld.so.conf.d/
+c_ok "chmod 777 /etc/ld.so.conf.d/ (library search path injection)"
+
+# =============================================================================
+# 17. Writable login-hook scripts (T1547 Boot or Logon Autostart Execution)
+# =============================================================================
+c_step "17. Writable login-hook scripts"
+
+# /etc/profile.d/ login hook - sourced by interactive shells on login (including root via su -)
+cat > /etc/profile.d/welcome.sh <<'EOF'
+# Login greeting hook (sourced by interactive shells)
+: # no-op placeholder
+EOF
+chmod 777 /etc/profile.d/welcome.sh
+c_ok "chmod 777 /etc/profile.d/welcome.sh (executes on interactive login)"
+c_info "Example: append commands to welcome.sh; they run when root does 'su -' or logs in"
+
+# /root/.bashrc writable - next root interactive shell executes injected code
+chmod 666 /root/.bashrc
+c_ok "chmod 666 /root/.bashrc (next root interactive shell runs injected code)"
+
+# =============================================================================
+# 18. Summary
 # =============================================================================
 c_step "Setup summary"
 
@@ -366,7 +446,7 @@ cat <<SUMMARY
 [Injected vulnerabilities]
   1.  Created user lowuser
   2.  sudo NOPASSWD: find, less, vim, awk, env (GTFOBins)
-  3.  sudo cat /var/log/*.log (wildcard path traversal)
+  3.  sudo cat /var/log/* (wildcard path traversal)
   4.  SUID: find, less, nmap, python3-backup, vuln_suid
   5.  Capability: python3 cap_setuid+ep
   6.  World-writable cron script: /opt/scripts/backup.sh
@@ -378,6 +458,9 @@ cat <<SUMMARY
   12. /root/.ssh/authorized_keys (666, writable)
   13. sudoers env_keep: LD_PRELOAD / LD_LIBRARY_PATH / PYTHONPATH
   14. lowuser added to docker group
+  15. Held vulnerable sudo / policykit-1 / kernel / libc6 (apt-mark hold)
+  16. Writable systemd unit ExecStart (/opt/myapp/start.sh) + /etc/ld.so.conf.d/
+  17. Writable /etc/profile.d/welcome.sh + /root/.bashrc
 
 SUMMARY
 
